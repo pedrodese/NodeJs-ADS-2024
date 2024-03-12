@@ -1,6 +1,13 @@
-const express = require("express");
+import express from 'express';
+import games from "./dadosGames/dados.js";
+
 
 const app = express();
+
+const buscarGamesPorNome = (nameGame) => {
+    return games.filter(game => game.title.toLowerCase().includes(nameGame.toLowerCase()));
+};
+
 app.use(express.json());
 
 
@@ -8,21 +15,36 @@ app.listen(3080,() => {
     console.log("Servidor Rodando!");
 });
 
-let games = [
-    {title: "Sea of Thieves", studio: "Rare", price: 30},
-    {title: "WOW", studio: "Blizzard", price: 120},
-    {title: "Valorant", studio: "Riot", price: 0},
-    {title: "COD", studio: "Activision", price: 200},
-    {title: "Minecraft", studio: "Mojang", price: 80},
-    {title: "God of War", studio: "Santa Monica", price: 250},
-    {title: "Forza Horizon", studio: "PlayGround Games", price: 249},
-    {title: "Microsoft Flight Simulator", studio: "Microsoft", price: 299},
-    {title: "WYD", studio: "RaidHut", price: 0},
-    {title: "Halo", studio: "Microsoft", price: 90}
-];
+app.get('/games/:idGame', (req, res) => {
+    const idGame = parseInt(req.params.idGame);
+    let mensagemErro = '';
+    let game;
 
-app.get("/",(req, res) => {
-    res.json(games);
+    if(!(isNaN(idGame))){
+        game = games.find(u => u.id === idGame);
+        if(!game){
+            mensagemErro = 'Game não encontrado'
+        }
+    } else{
+        mensagemErro = 'Requisição inválida'
+    }
+
+    if(game){
+        res.json(game);
+    }else{
+        res.status(404).send({"erro": mensagemErro});
+    }
+});
+
+
+app.get('/games', (req,res) => {
+    const gameName = req.query.busca;
+    const resultadoGames = gameName ? buscarGamesPorNome(gameName) : games;
+    if(resultadoGames.length > 0){
+        res.json(games);
+    }else{
+        res.status(404).send({"erro": "Nenhum Game encontrado pelo nome"})
+    }
 });
 
 app.post("/novogame",(req, res) => {
@@ -46,5 +68,11 @@ app.put('/novogame/:index',(req, res) => {
     games[index] = {title, studio, price};
 
     return res.json(games);
-})
+});
+
+app.delete("/:index", (req, res) => {
+    const {index} = req.params;
+    games.splice(index,1);
+    return res.json({message: "O Jogo foi deletado"});
+});
 
